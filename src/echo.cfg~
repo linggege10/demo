@@ -1,0 +1,8 @@
+run_mode=background
+net_mode=
+listen_ip=192.168.11.128
+listen_port=12345
+log_directory=
+log_file_name=echo_log
+log_file_size=10
+log_file_number=10
