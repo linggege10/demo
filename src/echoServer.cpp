@@ -12,12 +12,13 @@
 #include <errno.h>  
 #include <netinet/in.h>  
 #include <arpa/inet.h>   
-#include <iostream>s   
+#include <iostream>
 #include <string>  
 #include <fstream>
 #include<sys/types.h>   
 #include <sys/fcntl.h>
-  
+#include <stdbool.h>
+
 #define SERVERIP "192.168.11.128"  
 #define SERVERPORT 12345  
 #define MAXBUFFER 256
@@ -36,7 +37,8 @@ bool readConfigFile(const char* cfgfilepath,const string & key, string & value1)
     }  
     char tmp[100];  
     while(!cfgFile.eof())//循环读取每一行  
-    {  
+    {
+
         cfgFile.getline(tmp,100);//每行读取前100个字符，100个应该足够了  
         string line(tmp);  
         size_t pos = line.find('=');//找到每行的“=”号位置，之前是key之后是value  
@@ -225,7 +227,7 @@ void ayncReceive(int port, int backlog) {
 
 void syncReceive(){
 
- int serverFd, connfd,ret;  
+    int serverFd, connfd,ret;
     socklen_t len;  
     struct sockaddr_in serveraddr,clientaddr;  
     char readBuf[MAXBUFFER]={0};  
