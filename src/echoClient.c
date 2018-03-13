@@ -13,7 +13,7 @@
 #include <netinet/in.h>  
 #include <arpa/inet.h>  
   
-#define SERVERIP "192.168.11.128" 
+#define SERVERIP "127.0.0.1"
 #define SERVERPORT 12345  
 #define MAXBUFFER 256  
 
@@ -32,7 +32,9 @@ int main(int argc, char** argv)
     {  
         printf("socket error:%s\n",strerror(errno));  
         exit(-1);  
-    }  
+    }
+
+
     bzero(&serveraddr,sizeof(serveraddr));  
     serveraddr.sin_family=AF_INET;  
     serveraddr.sin_port=htons(SERVERPORT);  
