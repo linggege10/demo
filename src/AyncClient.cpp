@@ -12,7 +12,7 @@
 int client_tcp(char *serIP,in_port_t serPort,char *data);
 int main()
 {
-    int port=13635;
+    int port=13735;
     client_tcp("127.0.0.1",port,"Hello Server1233223!");
    // client_tcp("127.0.0.1",port,"Hello Server2!");
   //  client_tcp("127.0.0.1",port,"Hello Server3!");
@@ -75,6 +75,7 @@ int client_tcp(char *serIP,in_port_t serPort,char *data)
     }
 
     //关闭socket
+
     close(sock);
     //exit(0);
     return 0;

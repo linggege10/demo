@@ -23,6 +23,7 @@
 #include <sys/fcntl.h>
 #include <stdbool.h>
 #include <time.h>
+#include <map>
 #include"FileUtil.h"
 
 
@@ -35,6 +36,18 @@
 using namespace std;
 
 
+
+string getTime()
+{
+    time_t timep;
+    time (&timep);
+    char tmp[64];
+    strftime(tmp, sizeof(tmp), "%Y-%m-%d %H:%M:%S",localtime(&timep) );
+    return tmp;
+}
+map<int, string> mp;
+
+//异步接受数据
 void ayncReceive(int port, int backlog) {
     int rcd;
     int new_cli_fd;
@@ -59,6 +72,9 @@ void ayncReceive(int port, int backlog) {
         printf("Set server socket nonblock failed\n");
         exit(1);
     }
+
+
+
 
     struct sockaddr_in server_sockaddr;
     memset(&server_sockaddr, 0, sizeof(server_sockaddr));
@@ -92,7 +108,6 @@ void ayncReceive(int port, int backlog) {
     struct timeval tv; /* 声明一个时间变量来保存时间 */
     struct sockaddr_in cli_sockaddr;
     while (1) {
-
         tv.tv_sec = 20;
         tv.tv_usec = 0; /* 设置select等待的最大时间为20秒*/
         //每次都要重新设置集合才能激发事件  
@@ -104,7 +119,7 @@ void ayncReceive(int port, int backlog) {
                 FD_SET(watch_fd_list[ci], &watchset);
             }
 
-        rcd = select(maxfd + 1, &watchset, NULL, NULL, &tv);
+        rcd = select(maxfd + 1, &watchset, NULL, NULL, NULL);
         switch (rcd) {
             case -1:
                 printf("Select error\n");
@@ -127,12 +142,22 @@ void ayncReceive(int port, int backlog) {
                     socklen = sizeof(cli_sockaddr);
                     new_cli_fd = accept(server_sockfd,
                                         (struct sockaddr *) &cli_sockaddr, &socklen);
+
+                    //获取连接时间，客户端端口号和IP
+                    string   timeLjsj1 =getTime();
+                    char *addr=   inet_ntoa(cli_sockaddr.sin_addr);
+                    int port=ntohs(cli_sockaddr.sin_port);
+                    string   wLog =timeLjsj1+addr+to_string (port);
+
+                    mp.insert(pair<int, string>(server_sockfd, wLog));
                     if (new_cli_fd < 0) {
                         printf("Accept error\n");
                         exit(1);
                     }
                     printf("\nopen communication with  Client %s on socket %d\n",
                            inet_ntoa(cli_sockaddr.sin_addr), new_cli_fd);
+
+
 
                     for (ci = 1; ci <= backlog; ci++) {
                         if (watch_fd_list[ci] == -1) {
@@ -149,6 +174,7 @@ void ayncReceive(int port, int backlog) {
                     continue;
                 } else {//已有连接的数据通信
                     //遍历每个设置过的集合元素
+
                     for (ci = 1; ci <= backlog; ci++) { //data
                         if (watch_fd_list[ci] == -1)
                             continue;
@@ -161,6 +187,16 @@ void ayncReceive(int port, int backlog) {
                         if (len < 0) {
                             printf("Recv error\n");
                             exit(1);
+                        }else if(len==0){
+                            printf("断开连接");
+                            //记录日志
+                            string wrLog= mp[server_sockfd];
+                            char sWl[40];
+                            sprintf(sWl,"%s  %s",wrLog.c_str(),getTime().c_str());
+                            FileUtil fu;
+                            fu.writeLog(sWl);
+
+
                         }
                         buffer[len] = 0;
 
@@ -168,6 +204,10 @@ void ayncReceive(int port, int backlog) {
                         struct sockaddr_in sockaddr;
                         getpeername(watch_fd_list[ci], (struct sockaddr*) &sockaddr,
                                     (socklen_t*)sizeof(sockaddr));
+
+
+                        string wrLog= mp[server_sockfd];
+                        mp[server_sockfd]=wrLog+buffer;
                         printf("read data [%s] from Client %s on socket %d\n",
                                buffer,inet_ntoa(sockaddr.sin_addr),watch_fd_list[ci]);
                         //发送接收到到数据
@@ -203,23 +243,8 @@ void ayncReceive(int port, int backlog) {
 
 
 
-
-string getTime()
-{
-    time_t timep;
-    time (&timep);
-    char tmp[64];
-    strftime(tmp, sizeof(tmp), "%Y-%m-%d %H:%M:%S",localtime(&timep) );
-    return tmp;
-}
-
-
-
-
-
+//同步接受数据
 void syncReceive(int port,string ipServer){
-
-
     int serverFd, connfd,ret;
     socklen_t len;
     struct sockaddr_in serveraddr,clientaddr;
@@ -285,19 +310,6 @@ void syncReceive(int port,string ipServer){
         }
 
 
-
-
-
-
-        char sWl[40];
-        sprintf(sWl,"%s  %s %s %d %s",timeLjsj.c_str(),timeDksj.c_str(),addr,ntohs(clientaddr.sin_port),receiveData.c_str());
-        FileUtil fu;
-        fu.writeLog(sWl);
-
-
-
-
-
         close(connfd);
     }
 
@@ -320,7 +332,6 @@ int main(int argc, char** argv)
     const string log_file_name="log_file_name";
     const string log_file_size="log_file_size";
     const string log_file_number="log_file_number";
-
     string value_listen_ip="";
     string value_listen_port="";
     string value_net_mode="";
@@ -341,8 +352,6 @@ int main(int argc, char** argv)
     }else if(value_net_mode.compare("sync")==0){
         syncReceive(atoi(value_listen_port.c_str()),value_listen_ip);
     }
-
-
 
 
     return 0;
